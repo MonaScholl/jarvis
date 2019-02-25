@@ -1,0 +1,31 @@
+planner:
+  expand: false
+
+stages:
+  - name: build2
+    transformations:
+      - checkout
+      - compile
+
+transformations:
+  - name: checkout
+    service: git-service
+    command: checkout
+    parameters:
+      repositoryUri: https://github.com/spring-projects/spring-petclinic.git
+
+  - name: compile
+    service: maven-service
+    command: compile
+
+assessments:
+  - name: unitTests
+    service: maven-service
+    command: test
+
+qualityGates:
+  - policies:
+      - name: passedTestRate
+        interpretation: threshold
+        actualValue: passedRate
+        setPoint: 1

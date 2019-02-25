@@ -1,0 +1,42 @@
+planner:
+  expand: yes
+
+stages:
+  - name: buildTTGateway
+    transformations:
+      - checkoutTTGateway
+      - compileGateway
+      - assembleGateway
+
+transformations:
+  - name: checkoutTTGateway
+    service: git-service
+    command: checkout
+    parameters:
+      repositoryUri: https://gitlab.bitsolve.de/doering-thesis/test.git
+      credentials:
+        type: plain
+        username: ma_pipeline
+        password: test2345
+  - name: compileGateway
+    service: maven-service
+    command: compile
+  - name: assembleGateway
+    service: maven-service
+    command: assemble
+
+assessments:
+  - name: coberturaGateway
+    service: maven-service
+    command: cobertura
+
+qualityGates:
+  - policies:
+      - name: passedTestRate
+        interpretation: threshold
+        actualValue: passedRate
+        setPoint: 1
+      - name: testCoverage
+        interpretation: threshold
+        actualValue: coverage
+        setPoint: 0.1

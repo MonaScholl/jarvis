@@ -1,0 +1,53 @@
+planner:
+  expand: true
+
+stages:
+  - name: buildTTGateway
+    transformations:
+      - checkout
+      - compile
+      - assemble
+  - name: bakeTTGateway
+    transformations:
+      - buildContainer
+
+transformations:
+  - name: checkout
+    service: git-service
+    command: checkout
+    parameters:
+      repositoryUri: https://gitlab.traveltainment.int/ttgateway/ttgateway.git
+      branch: pipeline
+
+  - name: compile
+    service: maven-service
+    command: compile
+
+  - name: assemble
+    service: maven-service
+    command: assemble
+
+  - name: buildContainer
+    service: docker-service
+    command: buildTTGateway
+
+  - name: deployToArtifactory
+    service: maven-service
+    command: deploy
+
+assessments:
+  - name: cobertura
+    service: maven-service
+    command: cobertura
+
+qualityGates:
+  - strategy: auto
+    policies:
+      - name: PassedTestRate
+        interpretation: threshold
+        actualValue: passedRate
+        setPoint: 1
+      - name: LineCoverage
+        interpretation: threshold
+        actualValue: lineCoverage
+        setPoint: 0
