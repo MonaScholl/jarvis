@@ -1,0 +1,75 @@
+stages:
+  - name: buildTTGateway
+    transformations:
+      - checkout
+      - compile
+      - jar
+  - name: bake
+    transformations:
+      - springBake
+
+transformations:
+  - name: checkout
+    service: git-service
+    command: checkout
+    parameters:
+      repositoryUri: https://github.com/spring-projects/spring-petclinic.git
+
+  - name: compile
+    service: maven-service
+    command: compile
+    dependsOn:
+       - alias: repo
+         ref: p://this/transformations/checkout
+    parameters:
+      workspace: "@repo"
+
+  - name: jar
+    service: maven-service
+    command: jar
+    dependsOn:
+      - alias: repo
+        ref: p://this/transformations/checkout
+      - alias: compilation
+        ref: p://this/transformations/compile
+    parameters:
+      pom: "@repo"
+      classes: "@compilation"
+
+  - name: springBake
+    service: maven-service
+    command: spring-bake
+    dependsOn:
+      - alias: jar
+        ref: p://this/transformations/jar
+      - alias: repo
+        ref: p://this/transformations/checkout
+      - alias: compilation
+        ref: p://this/transformations/compile
+    parameters:
+      jar: "@jar"
+      pom: "@repo"
+      classes: "@compilation"
+
+assessments:
+  - name: unitTests
+    service: maven-service
+    command: test
+    dependsOn:
+      - alias: compile
+        ref: p://this/transformations/compile
+      - alias: repo
+        ref: p://this/transformations/checkout
+    parameters:
+      pom: "@repo"
+      classes: "@compile"
+
+
+qualityGates:
+  - strategy: auto
+    policies:
+      - name: unitTestPolicy
+        interpretation: threshold
+        ref: p://this/assessments/unitTests
+        actualValue: passedRate
+        setPoint: 1
